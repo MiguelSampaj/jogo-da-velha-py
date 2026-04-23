@@ -62,6 +62,7 @@ cores = {
 }
 
 vez = True
+venceu = False
 total_partidas = 0
 pontos_x = 0
 pontos_o = 0
@@ -136,7 +137,11 @@ areas_preenchidas = []
 simbolos_por_area = [[None, None, None], [None, None, None], [None, None, None]]
 colunas = [[], [], []]
 
+cont = 0
 while True:
+    if cont == 0:
+        pontuacao()
+        cont += 1
     for evento in event.get():
         if evento.type == QUIT:
             print(simbolos_por_area)
@@ -211,6 +216,7 @@ while True:
                                 pontos_x += 1
                             elif linha[0] == 'circle':
                                 pontos_o += 1
+                            venceu = True
                             limpar_tabuleiro()
                             pontuacao()
 
@@ -221,6 +227,7 @@ while True:
                                 pontos_x += 1
                             elif column[0] == 'circle':
                                 pontos_o += 1
+                            venceu = True
                             limpar_tabuleiro()
                             pontuacao()
 
@@ -235,6 +242,7 @@ while True:
                                     pontos_x += 1
                                 elif simbolo_meio == 'circle':
                                     pontos_o += 1
+                                venceu = True
                                 limpar_tabuleiro()
                                 pontuacao()
 
@@ -244,8 +252,16 @@ while True:
                                     pontos_x += 1
                                 elif simbolo_meio == 'circle':
                                     pontos_o += 1
+                                venceu = True
                                 limpar_tabuleiro()
                                 pontuacao()
+
+                    # Empate
+                    if len(areas_preenchidas) == 9 and not venceu:
+                        limpar_tabuleiro()
+                        pontuacao()
+                    elif venceu:
+                        venceu = False
 
     # Atualizando a tela do jogo
     time.wait(1)
