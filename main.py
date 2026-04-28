@@ -1,268 +1,182 @@
-from pygame import *
+from customtkinter import *
+from rich.traceback import install
 
-init()
+install()
 
-# Criando a tela
-tela = display.set_mode((1180, 590))
-display.set_caption('Jogo da velha')
+set_appearance_mode('dark')
 
-# Criando as divisoes
-divisao_um = Rect(190, 0, 10, 590)
-divisao_dois = Rect(390, 0, 10, 590)
-
-divisao_tres = Rect(0, 190, 590, 10)
-divisao_quatro = Rect(0, 390, 590, 10)
-
-divisao_jogo = Rect(620, 0, 10, 590)
-
-# Criando as areas clicaveis
-def criar_areas_clicaveis():
-    lado = 190
-    blocos = []
-    for x in range(3):
-        for y in range(3):
-            bloco = Rect(y*200, x*200, lado, lado)
-            blocos.append(bloco)
-
-    return blocos
-
-areas_clicaveis = criar_areas_clicaveis()
-
-# Funções de criar 'x' e 'o'
-lista_x = []
-lista_o = []
-
-def criar_x():
-    linha = Surface((10, 150), SRCALPHA)
-    linha.fill(cores['red'])
-    linha_um = transform.rotate(linha, -45)
-    linha_dois = transform.rotate(linha, 45)
-
-    linhas = (linha_um, linha_dois)
-
-    lista_x.append(linhas)
-
-    return linhas
-
-def desenhar_x(pos_x, pos_y):
-    linhas = criar_x()
-    for linha in linhas:
-        tela.blit(linha, (pos_x, pos_y))
-
-def desenhar_o(pos_x, pos_y):
-    lista_o.append(draw.circle(tela, cores['blue'], (pos_x, pos_y), 60, 10))
-
-# Cores
-cores = {
-    'white': (180, 210, 255),
-    'black': (40, 40, 50),
-    'red': (155, 30, 22),
-    'blue': (0, 0, 225),
-    'yellow': (225, 225, 10)
-}
-
+# Variaveis
 vez = True
-venceu = False
-total_partidas = 0
-pontos_x = 0
-pontos_o = 0
+vitoria = ''
+pnts_o = 0
+pnts_x = 0
+partidas_tot = 0
 
-# Desenhando as coisas na tela
-tela.fill(cores['black'])
+# TopLevel do fim_de_jogo
+def reiniciar(origin, root):
+    global vez, vitoria
 
-# Desenhando as divisoes
-draw.rect(tela, cores['white'], divisao_um)
-draw.rect(tela, cores['white'], divisao_dois)
-draw.rect(tela, cores['white'], divisao_tres)
-draw.rect(tela, cores['white'], divisao_quatro)
+    for linha in root.lista_casas_linha:
+        for cont in range(3):
+            linha[cont].configure(text='')
 
-draw.rect(tela, cores['yellow'], divisao_jogo)
+    vez = True
+    vitoria = ''
 
-# Desenhando as areas clicaveis
-for area in areas_clicaveis:
-    draw.rect(tela, cores['black'], area)
+    origin.destroy()
+    root.deiconify()
 
-# Desenhando a pontuação
-def pontuacao():
-    global total_partidas
-    total_partidas += 1
+class TplFimDeJogo(CTkToplevel):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, **kwargs)
+        self.title('Fim de Jogo')
+        self.geometry('500x350')
+        self.resizable(False, False)
+        self.grid_propagate(False)
+        self.protocol('WM_DELETE_WINDOW', self.master.destroy)
 
-    textos = []
-    fonte = font.SysFont(None, size=50)
+        self.master.withdraw()
 
-    texto_o = fonte.render(f'Pontos do círculo: {pontos_o}', True, cores['white'], None)
-    textos.append(texto_o)
+        global partidas_tot, pnts_o, pnts_x
 
-    texto_x = fonte.render(f'Pontos do x: {pontos_x}', True, cores['white'], None)
-    textos.append(texto_x)
+        partidas_tot += 1
 
-    texto_tot = fonte.render(f'Total de partidas: {total_partidas}', True, cores['white'], None)
-    textos.append(texto_tot)
+        self.frame_main = CTkFrame(self,
+                                   width=450,
+                                   height=300,
+                                   fg_color='#303030')
+        self.frame_main.grid_propagate(False)
+        self.frame_main.grid(row=0, column=0, pady=25, padx=25)
 
-    pos_y = 150
-    for texto in textos:
-        tela.blit(texto, (680, pos_y))
-        pos_y += 70
+        # Label para exibir os pontos e o total de partidas
+        self.lbl_pnts = CTkLabel(self.frame_main,
+                                text_color='#efefef',
+                                text=f'''
+           Pontos do círculo: {pnts_o}
+Pontos do X: {pnts_x}
+         Total de partidas: {partidas_tot}
+                                        ''',
+                                font=CTkFont(family='Roboto', size=30),
+                                anchor='w')
+        self.lbl_pnts.grid(row=0, column=0, columnspan=2, pady=25)
 
-# Funçao de limpar o tabuleiro
-def limpar_tabuleiro():
-    global areas_preenchidas, simbolos_por_area, colunas
+        # Botoes para reiniciar ou sair
+        self.but_reiniciar = CTkButton(self.frame_main,
+                                       text='Reiniciar',
+                                       text_color='#efefef',
+                                       width=100,
+                                       height=40,
+                                       font=CTkFont(family='Roboto', size=17),
+                                       command=lambda: reiniciar(self, self.master))
+        self.but_reiniciar.grid(row=1, column=0, pady=0, padx=(100, 10))
 
-    lista_x.clear()
-    lista_o.clear()
-    areas_preenchidas.clear()
+        self.but_sair = CTkButton(self.frame_main,
+                                       text='Sair',
+                                       text_color='#efefef',
+                                       width=100,
+                                       height=40,
+                                       font=CTkFont(family='Roboto', size=17),
+                                       command=lambda: self.master.destroy())
+        self.but_sair.grid(row=1, column=1, pady=0)
 
-    simbolos_por_area = [
-        [None, None, None],
-        [None, None, None],
-        [None, None, None]
-    ]
+# Casa
+def func_casa(casa):
+    global vez
 
-    colunas = [[], [], []]
+    if casa.cget('text') == '':
+        if vez:
+            casa.configure(text='o')
+            vez = False
+        else:
+            casa.configure(text='x')
+            vez = True
+    else:
+        print('inválido')
 
-    # Redesenhar o tabuleiro
-    tela.fill(cores['black'])
+    # Verificando se houve vitória
+    fim_de_jogo(casa.master)
 
-    draw.rect(tela, cores['white'], divisao_um)
-    draw.rect(tela, cores['white'], divisao_dois)
-    draw.rect(tela, cores['white'], divisao_tres)
-    draw.rect(tela, cores['white'], divisao_quatro)
-    draw.rect(tela, cores['yellow'], divisao_jogo)
 
-    for area in areas_clicaveis:
-        draw.rect(tela, cores['black'], area)
+class Casa(CTkButton):
+    def __init__(self, master, **kwargs):
+        super().__init__(master,
+                         **kwargs,
+                         fg_color='#353535',
+                         width=300,
+                         height=300,
+                         corner_radius=0,
+                         text='',
+                         hover_color='#404040',
+                         command=lambda: func_casa(self),
+                         font=CTkFont(family='Segoe UI', size=200))
 
-# Criando o mainloop
-areas_preenchidas = []
-simbolos_por_area = [[None, None, None], [None, None, None], [None, None, None]]
-colunas = [[], [], []]
 
-cont = 0
-while True:
-    if cont == 0:
-        pontuacao()
-        cont += 1
-    for evento in event.get():
-        if evento.type == QUIT:
-            print(simbolos_por_area)
-            print(colunas)
-            print(lista_x)
-            print(lista_o)
-            quit()
-            exit()
-        elif evento.type == MOUSEBUTTONDOWN:
-            for area in areas_clicaveis:
-                if area.collidepoint(evento.pos):
-                    # print(f'Clicou em {areas_clicaveis.index(area)}')
-                    meio_area = (area.center[0] - 55, area.center[1] - 55)
+# Função de vitória
+def fim_de_jogo(root):
+    global vitoria, pnts_o, pnts_x
 
-                    # Fazendo a parte gráfica de pôr os simbolos (x, o)
-                    if vez and area not in areas_preenchidas:
-                        desenhar_o(area.center[0], area.center[1])
+    # Linha
+    for linha in root.lista_casas_linha:
+        if linha[0].cget('text') == linha[1].cget('text') == linha[2].cget('text'):
+            if linha[0].cget('text') == 'o':
+                vitoria = 'o'
+            elif linha[0].cget('text') == 'x':
+                vitoria = 'x'
 
-                        linha = 0
-                        if areas_clicaveis.index(area) <= 2:
-                            linha = 0
-                            simbolos_por_area[linha][areas_clicaveis.index(area)] = 'circle'
-                        elif 2 < areas_clicaveis.index(area) <= 5:
-                            linha = 1
-                            simbolos_por_area[linha][areas_clicaveis.index(area) - 3] = 'circle'
-                        elif 5 < areas_clicaveis.index(area) <= 8:
-                            linha = 2
-                            simbolos_por_area[linha][areas_clicaveis.index(area) - 6] = 'circle'
+    # Coluna
+    for coluna in root.lista_casas_coluna:
+        if coluna[0].cget('text') == coluna[1].cget('text') == coluna[2].cget('text'):
+            if coluna[0].cget('text') == 'o':
+                vitoria = 'o'
+            elif coluna[0].cget('text') == 'x':
+                vitoria = 'x'
 
-                        coluna = 0
-                        if areas_clicaveis.index(area) in [0, 3, 6]:
-                            coluna = 0
-                        elif areas_clicaveis.index(area) in [1, 4, 7]:
-                            coluna = 1
-                        elif areas_clicaveis.index(area) in [2, 5, 8]:
-                            coluna = 2
-                        colunas[coluna].insert(areas_clicaveis.index(area), 'circle')
+    # Diagonal
+    if root.lista_casas_linha[1][1].cget('text') != '':
+        simbolo_meio = root.lista_casas_linha[1][1].cget('text')
 
-                        areas_preenchidas.append(area)
-                        vez = False
-                    elif not vez and area not in areas_preenchidas:
-                        desenhar_x(meio_area[0], meio_area[1])
+        if root.lista_casas_linha[0][0].cget('text') == simbolo_meio == root.lista_casas_linha[2][2].cget('text'):
+            vitoria = str(simbolo_meio)
 
-                        linha = 0
-                        if areas_clicaveis.index(area) <= 2:
-                            linha = 0
-                            simbolos_por_area[linha][areas_clicaveis.index(area)] = 'x'
-                        elif areas_clicaveis.index(area) <= 5:
-                            linha = 1
-                            simbolos_por_area[linha][areas_clicaveis.index(area) - 3] = 'x'
-                        elif areas_clicaveis.index(area) <= 8:
-                            linha = 2
-                            simbolos_por_area[linha][areas_clicaveis.index(area) - 6] = 'x'
+        if root.lista_casas_linha[2][0].cget('text') == simbolo_meio == root.lista_casas_linha[0][2].cget('text'):
+            vitoria = str(simbolo_meio)
 
-                        coluna = 0
-                        if areas_clicaveis.index(area) in [0, 3, 6]:
-                            coluna = 0
-                        elif areas_clicaveis.index(area) in [1, 4, 7]:
-                            coluna = 1
-                        elif areas_clicaveis.index(area) in [2, 5, 8]:
-                            coluna = 2
-                        colunas[coluna].insert(areas_clicaveis.index(area), 'x')
+    if vitoria == 'x':
+        pnts_x += 1
+        tpl_end_game = TplFimDeJogo(root)
+    elif vitoria == 'o':
+        pnts_o += 1
+        tpl_end_game = TplFimDeJogo(root)
 
-                        areas_preenchidas.append(area)
-                        vez = True
+# MainRoot
+class App(CTk):
+    def __init__(self):
+        super().__init__()
+        self.geometry('960x960')
+        self.title('Jogo da velha')
+        self.resizable(False, False)
+        self.grid_propagate(False)
+        self.configure(fg_color='#dfdfdf')
 
-                    # Sistema de vitória
-                    # Testando linha
-                    for linha in simbolos_por_area:
-                        if linha[0] is not None and linha[1] is not None and linha[2] is not None and all(x == linha[0] for x in linha):
-                            if linha[0] == 'x':
-                                pontos_x += 1
-                            elif linha[0] == 'circle':
-                                pontos_o += 1
-                            venceu = True
-                            limpar_tabuleiro()
-                            pontuacao()
+        global vitoria
 
-                    # Testando coluna
-                    for column in colunas:
-                        if len(column) >= 3 and all(x == column[0] for x in column):
-                            if column[0] == 'x':
-                                pontos_x += 1
-                            elif column[0] == 'circle':
-                                pontos_o += 1
-                            venceu = True
-                            limpar_tabuleiro()
-                            pontuacao()
+        # Criando as casas
+        self.lista_casas_linha = [[None, None, None],
+                                  [None, None, None],
+                                  [None, None, None]]
 
-                    # Testando diagonais
-                    if areas_clicaveis.index(area) % 2 == 0:
-                        if areas_clicaveis[4] in areas_preenchidas:
-                            simbolo_meio = simbolos_por_area[1][1]
+        self.lista_casas_coluna = [[None, None, None],
+                                   [None, None, None],
+                                   [None, None, None]]
 
-                            # 1 Diagonal
-                            if (areas_clicaveis[0] in areas_preenchidas and simbolos_por_area[0][0] == simbolo_meio) and (areas_clicaveis[8] in areas_preenchidas and simbolos_por_area[-1][-1] == simbolo_meio):
-                                if simbolo_meio == 'x':
-                                    pontos_x += 1
-                                elif simbolo_meio == 'circle':
-                                    pontos_o += 1
-                                venceu = True
-                                limpar_tabuleiro()
-                                pontuacao()
+        for x in range(3):
+            for y in range(3):
+                casa = Casa(self)
 
-                            # 2 Diagonal
-                            elif (areas_clicaveis[2] in areas_preenchidas and simbolos_por_area[0][-1] == simbolo_meio) and (areas_clicaveis[6] in areas_preenchidas and simbolos_por_area[-1][0] == simbolo_meio):
-                                if simbolo_meio == 'x':
-                                    pontos_x += 1
-                                elif simbolo_meio == 'circle':
-                                    pontos_o += 1
-                                venceu = True
-                                limpar_tabuleiro()
-                                pontuacao()
+                self.lista_casas_linha[x][y] = casa
+                self.lista_casas_coluna[y][x] = casa
 
-                    # Empate
-                    if len(areas_preenchidas) == 9 and not venceu:
-                        limpar_tabuleiro()
-                        pontuacao()
-                    elif venceu:
-                        venceu = False
+                casa.grid(row=x, column=y, pady=10, padx=10)
 
-    # Atualizando a tela do jogo
-    time.wait(1)
-    display.flip()
+app = App()
+app.mainloop()
