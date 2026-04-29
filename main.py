@@ -111,7 +111,7 @@ class Casa(CTkButton):
                          font=CTkFont(family='Segoe UI', size=200))
 
 
-# Função de vitória
+# Função de vitória e empate
 def fim_de_jogo(root):
     global vitoria, pnts_o, pnts_x
 
@@ -147,6 +147,18 @@ def fim_de_jogo(root):
     elif vitoria == 'o':
         pnts_o += 1
         tpl_end_game = TplFimDeJogo(root)
+
+    # Empate
+    cont_linhas_comp = 0
+    linhas_analisadas = []
+    for linha in root.lista_casas_linha:
+        if linha[0].cget('text') != '' and linha[1].cget('text') != '' and linha[2].cget('text') != '' and linha not in linhas_analisadas:
+            cont_linhas_comp += 1
+            linhas_analisadas.append(linha)
+
+    if cont_linhas_comp == 3 and vitoria == '':
+        tpl_end_game = TplFimDeJogo(root)
+
 
 # MainRoot
 class App(CTk):
